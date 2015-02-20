@@ -4,7 +4,7 @@ from setuptools import setup, find_packages
 
 setup(
     name='checkio_docker',
-    version='0.0.1',
+    version='0.0.2',
     description='Build docker images from CheckiO mission module',
     author='CheckiO',
     author_email='igor@checkio.org',

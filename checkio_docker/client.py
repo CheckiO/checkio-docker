@@ -11,7 +11,7 @@ from docker.utils import kwargs_from_env
 from .parser import MissionFilesHandler
 
 
-class APIClient(object):
+class DockerClient(object):
     PREFIX_IMAGE = 'checkio'
 
     def __init__(self, name_image, environment, connection_params=None):
