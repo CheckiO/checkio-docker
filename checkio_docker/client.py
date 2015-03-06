@@ -24,16 +24,18 @@ class DockerClient(object):
         return "{}/{}-{}".format(self.PREFIX_IMAGE, mission, environment)
 
     def run(self, mission, environment, command, mem_limit=None, cpu_shares=None):
-        image_name = self.get_image_name(mission, environment)
-        container = self.create_container(image_name, command, mem_limit, cpu_shares)
+        container = self.create_container(mission, environment, command, mem_limit, cpu_shares)
         container.start()
         return container
 
-    def create_container(self, image_name, command, mem_limit=None, cpu_shares=None):
+    def create_container(self, mission, environment, command, name=None, mem_limit=None,
+                         cpu_shares=None):
         logging.debug("Create container: {}, {}, {}".format(command, mem_limit, cpu_shares))
+        image_name = self.get_image_name(mission, environment)
         container = self._client.create_container(
             image=image_name,
             command=command,
+            name=name,
             mem_limit=mem_limit,
             cpu_shares=cpu_shares
         )
