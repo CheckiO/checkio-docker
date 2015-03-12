@@ -58,17 +58,29 @@ class MissionFilesHandler(object):
             content = f.readline()
         if not content:
             raise MissionFilesException('Schema file is empty')
-
         parts = content.split(';', 1)
         if len(parts) != 2:
             raise MissionFilesException('Schema content is wrong')
-        return parts[1].strip()
+        url = parts[1].strip()
+        branch = None
+        if not url.startswith('git@github.com') and '@' in url:
+            repository_parts = url.split('@', 1)
+            url = repository_parts[0].strip()
+            branch = repository_parts[1].strip()
+        return {
+            'url': url,
+            'branch': branch
+        }
 
     def git_pull(self, repository, destination_path):
         try:
-            git.Repo.clone_from(repository, destination_path)
+            repo = git.Repo.clone_from(repository['url'], destination_path)
         except git.GitCommandError as e:
             raise Exception(u"{}, {}".format(e or '', e.stderr))
+        branch = repository.get('branch')
+        if branch is not None:
+            g = git.Git(repo.working_dir)
+            g.checkout(branch)
 
     def copy_user_files(self, source_path):
         copy_tree(source_path, self.working_path)
