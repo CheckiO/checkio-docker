@@ -63,10 +63,12 @@ class MissionFilesHandler(object):
             raise MissionFilesException('Schema content is wrong')
         url = parts[1].strip()
         branch = None
-        if not url.startswith('git@github.com') and '@' in url:
+        if '@' in url:
             repository_parts = url.split('@', 1)
-            url = repository_parts[0].strip()
-            branch = repository_parts[1].strip()
+            if ':' not in repository_parts[1]:
+            # exclude `git@github.com:CheckiO/mission-template.git`
+                url = repository_parts[0].strip()
+                branch = repository_parts[1].strip()
         return {
             'url': url,
             'branch': branch
