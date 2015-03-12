@@ -4,11 +4,11 @@ from setuptools import setup, find_packages
 
 setup(
     name='checkio_docker',
-    version='0.0.5',
+    version='0.0.6',
     description='Build docker images from CheckiO mission module',
     author='CheckiO',
     author_email='igor@checkio.org',
     url='https://github.com/CheckiO/checkio-docker',
-    download_url='https://github.com/CheckiO/checkio-docker/tarball/0.0.5',
+    download_url='https://github.com/CheckiO/checkio-docker/tarball/0.0.6',
     packages=find_packages(),
 )

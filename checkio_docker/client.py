@@ -51,7 +51,7 @@ class DockerClient(object):
         Must be passed one of this args: path or dockerfile_content
         :return: None
         """
-        logging.debug("Build: {}, {}, {}".format(name_image, path))
+        logging.debug("Build: {}, {}".format(name_image, path))
 
         def _format_output_line(line):
             line_str = line.decode().strip()
