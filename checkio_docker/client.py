@@ -14,10 +14,13 @@ from .parser import MissionFilesHandler
 
 class DockerClient(object):
     PREFIX_IMAGE = 'checkio'
+    LINUX_SOCKET = 'unix://var/run/docker.sock'
 
     def __init__(self, connection_params=None):
         if connection_params is None:
             connection_params = kwargs_from_env(assert_hostname=False)
+            if 'base_url' not in connection_params:
+                connection_params['base_url'] = self.LINUX_SOCKET
         self._client = Client(**connection_params)
 
     def get_image_name(self, mission, environment):
