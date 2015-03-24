@@ -23,18 +23,18 @@ class DockerClient(object):
                 connection_params['base_url'] = self.LINUX_SOCKET
         self._client = Client(**connection_params)
 
-    def get_image_name(self, mission, environment):
-        return "{}/{}-{}".format(self.PREFIX_IMAGE, mission, environment)
+    def get_image_name(self, mission):
+        return "{}/{}".format(self.PREFIX_IMAGE, mission)
 
-    def run(self, mission, environment, command, mem_limit=None, cpu_shares=None):
-        container = self.create_container(mission, environment, command, mem_limit, cpu_shares)
+    def run(self, mission, command, mem_limit=None, cpu_shares=None):
+        container = self.create_container(mission, command, mem_limit, cpu_shares)
         container.start()
         return container
 
-    def create_container(self, mission, environment, command, name=None, mem_limit=None,
+    def create_container(self, mission, command, name=None, mem_limit=None,
                          cpu_shares=None):
         logging.debug("Create container: {}, {}, {}".format(command, mem_limit, cpu_shares))
-        image_name = self.get_image_name(mission, environment)
+        image_name = self.get_image_name(mission)
         container = self._client.create_container(
             image=image_name,
             command=command,
@@ -70,40 +70,39 @@ class DockerClient(object):
         file_obj = None
         if dockerfile_content is not None:
             file_obj = BytesIO(dockerfile_content.encode('utf-8'))
-
         for line in self._client.build(path=path, fileobj=file_obj, tag=name_image, nocache=True):
             line = _format_output_line(line)
             if line is not None:
                 logging.info(line)
 
-    def build_mission(self, mission, environment, source_path):
+    def build_mission(self, mission, source_path):
         """
         Build new docker image
         :param path: path to dir with CheckiO mission
         :return: None
         """
-        image_name = self.get_image_name(mission, environment)
+        image_name = self.get_image_name(mission)
         working_path = None
         try:
             working_path = tempfile.mkdtemp()
-            mission_source = MissionFilesCompiler(environment, working_path)
+            mission_source = MissionFilesCompiler(working_path)
             compiled_path = mission_source.compile_from_files(source_path)
             self.build(name_image=image_name, path=compiled_path)
         finally:
             if working_path is not None:
                 shutil.rmtree(working_path)
 
-    def build_mission_repo(self, mission, environment, repository):
+    def build_mission_repo(self, mission, repository):
         """
         Build new docker image
         :param repository: repository of CheckiO mission
         :return: None
         """
-        image_name = self.get_image_name(mission, environment)
+        image_name = self.get_image_name(mission)
         working_path = None
         try:
             working_path = tempfile.mkdtemp()
-            mission_source = MissionFilesCompiler(environment, working_path)
+            mission_source = MissionFilesCompiler(working_path)
             compiled_path = mission_source.compile_from_git(repository)
             self.build(name_image=image_name, path=compiled_path)
         finally:

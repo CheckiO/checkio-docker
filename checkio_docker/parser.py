@@ -115,7 +115,8 @@ class MissionFilesCompiler(object):
         envs_docker = []
         for env in active_envs:
             docker_env_file = os.path.join(self.path_verification, 'envs', env, self.DOCKER_ENV_FILENAME)
-            envs_docker.append(self._get_file_content(docker_env_file))
+            docker_env_content = self._get_file_content(docker_env_file)
+            envs_docker.append(docker_env_content.replace('{{env}}', env))
 
         docker_main_file = os.path.join(self.path_verification, self.DOCKER_MAIN_FILENAME)
         docker_main = self._get_file_content(docker_main_file)
