@@ -9,7 +9,7 @@ from docker import Client
 from docker.utils import kwargs_from_env
 
 from .container import Container
-from .parser import MissionFilesHandler
+from .parser import MissionFilesCompiler
 
 
 class DockerClient(object):
@@ -86,7 +86,7 @@ class DockerClient(object):
         working_path = None
         try:
             working_path = tempfile.mkdtemp()
-            mission_source = MissionFilesHandler(environment, working_path)
+            mission_source = MissionFilesCompiler(environment, working_path)
             compiled_path = mission_source.compile_from_files(source_path)
             self.build(name_image=image_name, path=compiled_path)
         finally:
@@ -103,7 +103,7 @@ class DockerClient(object):
         working_path = None
         try:
             working_path = tempfile.mkdtemp()
-            mission_source = MissionFilesHandler(environment, working_path)
+            mission_source = MissionFilesCompiler(environment, working_path)
             compiled_path = mission_source.compile_from_git(repository)
             self.build(name_image=image_name, path=compiled_path)
         finally:
