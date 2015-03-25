@@ -1,7 +1,5 @@
 import json
 import logging
-import shutil
-import tempfile
 
 from io import BytesIO
 
@@ -10,6 +8,7 @@ from docker.utils import kwargs_from_env
 
 from .container import Container
 from .parser import MissionFilesCompiler
+from .utils import TemporaryDirectory
 
 
 class DockerClient(object):
@@ -75,36 +74,21 @@ class DockerClient(object):
             if line is not None:
                 logging.info(line)
 
-    def build_mission(self, mission, source_path):
+    def build_mission(self, mission, repository=None, source_path=None, compiled_path=None):
         """
         Build new docker image
-        :param path: path to dir with CheckiO mission
-        :return: None
-        """
-        image_name = self.get_image_name(mission)
-        working_path = None
-        try:
-            working_path = tempfile.mkdtemp()
-            mission_source = MissionFilesCompiler(working_path)
-            compiled_path = mission_source.compile_from_files(source_path)
-            self.build(name_image=image_name, path=compiled_path)
-        finally:
-            if working_path is not None:
-                shutil.rmtree(working_path)
-
-    def build_mission_repo(self, mission, repository):
-        """
-        Build new docker image
+        :param mission: mission slug
         :param repository: repository of CheckiO mission
-        :return: None
+        :param compiled_path: path for store compiled mission
+        :return:
         """
+        assert repository or source_path
+
         image_name = self.get_image_name(mission)
-        working_path = None
-        try:
-            working_path = tempfile.mkdtemp()
-            mission_source = MissionFilesCompiler(working_path)
-            compiled_path = mission_source.compile_from_git(repository)
-            self.build(name_image=image_name, path=compiled_path)
-        finally:
-            if working_path is not None:
-                shutil.rmtree(working_path)
+        with TemporaryDirectory() as temp_path:
+            if compiled_path is None:
+                compiled_path = temp_path
+
+            mission_source = MissionFilesCompiler(compiled_path)
+            mission_source.compile(source_path=source_path, repository=repository)
+            self.build(name_image=image_name, path=mission_source.path_verification)
