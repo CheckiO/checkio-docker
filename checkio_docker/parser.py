@@ -4,13 +4,38 @@ import shutil
 import tempfile
 from distutils.dir_util import copy_tree
 
+from .utils import TemporaryDirectory
+
 
 class MissionFilesException(Exception):
     pass
 
 
 class MissionFilesCompiler(object):
+    """
+    Wrapper of _MissionFilesCompiler, if working_path is located in mission folder
+    it can be recursion
+    """
+    DIR_VERIFICATION = 'verification'
 
+    def __init__(self, dst_path):
+        self.dst_path = dst_path
+        self.path_verification = os.path.join(self.dst_path, self.DIR_VERIFICATION)
+
+    def compile(self, source_path=None, repository=None):
+        assert repository or source_path
+
+        with TemporaryDirectory() as working_path:
+            mission_source = _MissionFilesCompiler(working_path)
+            if repository is not None:
+                mission_source.compile_from_git(repository)
+            else:
+                mission_source.compile_from_files(source_path)
+            copy_tree(working_path, self.dst_path)
+        return self.dst_path
+
+
+class _MissionFilesCompiler(object):
     DIR_VERIFICATION = 'verification'
     DIR_VERIFICATION_ENVS = 'envs'
     DIR_INITIAL_CODES = 'initial'
@@ -19,7 +44,6 @@ class MissionFilesCompiler(object):
 
     DOCKER_MAIN_FILENAME = 'Dockertemplate'
     DOCKER_ENV_FILENAME = 'Dockerenv'
-
 
     def __init__(self, working_path):
         self.working_path = working_path
