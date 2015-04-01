@@ -22,6 +22,9 @@ class DockerClient(object):
                 connection_params['base_url'] = self.LINUX_SOCKET
         self._client = Client(**connection_params)
 
+    def __getattr__(self, attr):
+        return getattr(self._client, attr)
+
     def get_image_name(self, mission):
         return "{}/{}".format(self.PREFIX_IMAGE, mission)
 
@@ -30,8 +33,7 @@ class DockerClient(object):
         container.start()
         return container
 
-    def create_container(self, mission, command, name=None, mem_limit=None,
-                         cpu_shares=None):
+    def create_container(self, mission, command, name=None, mem_limit=None, cpu_shares=None):
         logging.debug("Create container: {}, {}, {}".format(command, mem_limit, cpu_shares))
         image_name = self.get_image_name(mission)
         container = self._client.create_container(
