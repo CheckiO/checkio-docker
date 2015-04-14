@@ -2,26 +2,43 @@ import os
 import git
 import shutil
 import tempfile
+import yaml
+import logging
 from distutils.dir_util import copy_tree
 
-from .utils import TemporaryDirectory
+
+def get_folder_config(folder_name):
+    try:
+        fh = open(os.path.join(folder_name, '.folder'))
+        return yaml.load(fh)
+    except IOError:
+        return {}
+    finally:
+        try:
+            fh.close()
+        except UnboundLocalError:
+            pass
+
 
 def relink_tree(src, dst):
     if not os.path.exists(dst):
         os.mkdir(dst)
+    config = get_folder_config(dst)
     for name in os.listdir(src):
+        if name in ['.git', '.gitignore']:
+            continue
         dst_name = os.path.join(dst, name)
         src_name = os.path.join(src, name)
         if os.path.exists(dst_name):
             assert os.path.isfile(dst_name) == os.path.isfile(src_name)
             if os.path.isfile(dst_name):
+                if name != '.folder' or 'replace' not in config or name not in config['replace']:
+                    logging.warning('unexpected replacement by inheritance of %s', dst_name)
                 os.remove(dst_name)
         if os.path.isdir(src_name):
             relink_tree(src_name, dst_name)
         else:
             os.symlink(src_name, dst_name)
-
-
 
 
 class MissionFilesException(Exception):
