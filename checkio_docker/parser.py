@@ -2,9 +2,43 @@ import os
 import git
 import shutil
 import tempfile
+import yaml
+import logging
 from distutils.dir_util import copy_tree
 
-from .utils import TemporaryDirectory
+
+def get_folder_config(folder_name):
+    try:
+        fh = open(os.path.join(folder_name, '.folder'))
+        return yaml.load(fh)
+    except IOError:
+        return {}
+    finally:
+        try:
+            fh.close()
+        except UnboundLocalError:
+            pass
+
+
+def relink_tree(src, dst):
+    if not os.path.exists(dst):
+        os.mkdir(dst)
+    config = get_folder_config(dst)
+    for name in os.listdir(src):
+        if name in ['.git', '.gitignore']:
+            continue
+        dst_name = os.path.join(dst, name)
+        src_name = os.path.join(src, name)
+        if os.path.exists(dst_name):
+            assert os.path.isfile(dst_name) == os.path.isfile(src_name)
+            if os.path.isfile(dst_name):
+                if name != '.folder' or 'replace' not in config or name not in config['replace']:
+                    logging.warning('unexpected replacement by inheritance of %s', dst_name)
+                os.remove(dst_name)
+        if os.path.isdir(src_name):
+            relink_tree(src_name, dst_name)
+        else:
+            os.symlink(src_name, dst_name)
 
 
 class MissionFilesException(Exception):
@@ -22,16 +56,13 @@ class MissionFilesCompiler(object):
         self.dst_path = dst_path
         self.path_verification = os.path.join(self.dst_path, self.DIR_VERIFICATION)
 
-    def compile(self, source_path=None, repository=None):
+    def compile(self, source_path=None, repository=None, use_link=False):
         assert repository or source_path
-
-        with TemporaryDirectory() as working_path:
-            mission_source = _MissionFilesCompiler(working_path)
-            if repository is not None:
-                mission_source.compile_from_git(repository)
-            else:
-                mission_source.compile_from_files(source_path)
-            copy_tree(working_path, self.dst_path)
+        mission_source = _MissionFilesCompiler(self.dst_path)
+        if repository is not None:
+            mission_source.compile_from_git(repository)
+        else:
+            mission_source.compile_from_files(source_path, use_link=use_link)
         return self.dst_path
 
 
@@ -51,14 +82,17 @@ class _MissionFilesCompiler(object):
         self.path_envs = os.path.join(self.path_verification, self.DIR_VERIFICATION_ENVS)
         self.path_initial = os.path.join(self.working_path, self.DIR_INITIAL_CODES)
 
-    def compile_from_files(self, source_path):
+    def compile_from_files(self, source_path, use_link=False):
         base_repositories = self.download_base_repositories(source_path)
         if base_repositories:
             base_repositories.reverse()
             for repository_path in base_repositories:
                 copy_tree(repository_path, self.working_path)
                 shutil.rmtree(repository_path)
-        self.copy_user_files(source_path)
+        if use_link:
+            self.relink_user_files(source_path)
+        else:
+            self.copy_user_files(source_path)
         active_envs = self.get_active_envs()
         self.filter_envs(active_envs)
         self.make_dockerfile(active_envs)
@@ -126,6 +160,9 @@ class _MissionFilesCompiler(object):
 
     def copy_user_files(self, source_path):
         copy_tree(source_path, self.working_path)
+
+    def relink_user_files(self, source_path):
+        relink_tree(source_path, self.working_path)        
 
     def get_active_envs(self):
         return os.listdir(self.path_initial)
