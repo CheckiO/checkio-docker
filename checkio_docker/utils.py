@@ -1,3 +1,4 @@
+import os
 import shutil as _shutil
 from tempfile import mkdtemp
 
@@ -18,5 +19,6 @@ class TemporaryDirectory(object):
 
     def cleanup(self):
         if not self._closed:
-            _shutil.rmtree(self.working_path)
+            if os.path.exists(self.working_path):
+                _shutil.rmtree(self.working_path)
             self._closed = True
