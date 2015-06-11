@@ -73,7 +73,7 @@ class DockerClient(object):
         logging.debug("Build: {}, {}".format(name_image, path))
 
         def _format_output_line(line):
-            line_str = line.decode().strip()
+            line_str = line.decode('latin-1').strip()
             data = json.loads(line_str)
             for key, value in data.items():
                 # TODO: if any error - raise exception
@@ -81,7 +81,7 @@ class DockerClient(object):
                     value = value.strip()
                 if not value:
                     return None
-                return "{}: {}".format(key, value)
+                return u"{}: {}".format(key, value)
 
         file_obj = None
         if dockerfile_content is not None:
