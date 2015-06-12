@@ -1,2 +1,3 @@
-GitPython==0.3.5
 docker-py==1.1.0
+GitPython==0.3.5
+PyYAML==3.11
