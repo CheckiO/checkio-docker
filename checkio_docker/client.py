@@ -1,5 +1,6 @@
 import json
 import logging
+import sys
 
 from io import BytesIO
 
@@ -9,6 +10,10 @@ from docker.utils import kwargs_from_env
 from .container import Container
 from .parser import MissionFilesCompiler
 from .utils import TemporaryDirectory
+
+PY3 = sys.version_info[0] == 3
+if PY3:
+    basestring = str
 
 
 class DockerClient(object):
@@ -41,7 +46,7 @@ class DockerClient(object):
             volumes_list = []
             host_config = {}
         else:
-            volumes_list = volumes.keys()
+            volumes_list = list(volumes.keys())
             binds = []
             host_config = {
                 'Binds': binds
