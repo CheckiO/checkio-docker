@@ -8,12 +8,12 @@ requirements = [l.strip() for l in open(join(source_directory, 'requirements.txt
 
 setup(
     name='checkio_docker',
-    version='0.0.19',
+    version='0.0.20',
     description='Build docker images from CheckiO mission module',
     author='CheckiO',
     author_email='igor@checkio.org',
     url='https://github.com/CheckiO/checkio-docker',
-    download_url='https://github.com/CheckiO/checkio-docker/tarball/0.0.19',
+    download_url='https://github.com/CheckiO/checkio-docker/tarball/0.0.20',
     packages=find_packages(),
     install_requires=requirements,
 )
