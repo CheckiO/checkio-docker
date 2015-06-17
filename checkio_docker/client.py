@@ -39,7 +39,7 @@ class DockerClient(object):
         return container
 
     def create_container(self, mission, command, name=None, mem_limit=None, cpu_shares=None,
-                         volumes=None):
+                         volumes=None, **kwargs):
         logging.debug("Create container: {}, {}, {}".format(command, mem_limit, cpu_shares))
         image_name = self.get_image_name(mission)
         if volumes is None:
@@ -61,7 +61,8 @@ class DockerClient(object):
             mem_limit=mem_limit,
             cpu_shares=cpu_shares,
             volumes=volumes_list,
-            host_config=host_config
+            host_config=host_config,
+            **kwargs
         )
         return Container(container=container, connection=self._client)
 
