@@ -38,4 +38,4 @@ def recursive_overwrite(src, dest, ignore=None):
                 recursive_overwrite(os.path.join(src, f), os.path.join(dest, f), ignore)
     else:
         _shutil.copyfile(src, dest)
-        os.chmod(dest, 0755)
+        os.chmod(dest, 0o755)
