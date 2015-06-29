@@ -4,7 +4,8 @@ import shutil
 import tempfile
 import yaml
 import logging
-from distutils.dir_util import copy_tree
+
+from .utils import recursive_overwrite
 
 
 def get_folder_config(folder_name):
@@ -87,7 +88,7 @@ class _MissionFilesCompiler(object):
         if base_repositories:
             base_repositories.reverse()
             for repository_path in base_repositories:
-                copy_tree(repository_path, self.working_path)
+                recursive_overwrite(repository_path, self.working_path)
                 shutil.rmtree(repository_path)
         if use_link:
             self.relink_user_files(source_path)
@@ -159,7 +160,7 @@ class _MissionFilesCompiler(object):
             g.checkout(branch)
 
     def copy_user_files(self, source_path):
-        copy_tree(source_path, self.working_path)
+        recursive_overwrite(source_path, self.working_path)
 
     def relink_user_files(self, source_path):
         relink_tree(source_path, self.working_path)        
