@@ -33,7 +33,7 @@ def relink_tree(src, dst):
         if os.path.exists(dst_name):
             assert os.path.isfile(dst_name) == os.path.isfile(src_name)
             if os.path.isfile(dst_name):
-                if name != '.folder' or 'replace' not in config or name not in config['replace']:
+                if name != '.folder' and ('replace' not in config or name not in config['replace']):
                     logging.warning('unexpected replacement by inheritance of %s', dst_name)
                 os.remove(dst_name)
         if os.path.isdir(src_name):
