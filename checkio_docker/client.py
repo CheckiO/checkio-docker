@@ -1,7 +1,6 @@
-import json
 import logging
 import sys
-
+from functools import partial
 from io import BytesIO
 
 from docker import Client
@@ -17,7 +16,7 @@ if PY3:
 
 
 class DockerClient(object):
-    PREFIX_IMAGE = 'checkio'
+    DOCKER_REPOSITORY_PREFIX = 'checkio'
     LINUX_SOCKET = 'unix://var/run/docker.sock'
 
     def __init__(self, connection_params=None):
@@ -30,8 +29,9 @@ class DockerClient(object):
     def __getattr__(self, attr):
         return getattr(self._client, attr)
 
-    def get_image_name(self, mission):
-        return "{}/{}".format(self.PREFIX_IMAGE, mission)
+    @classmethod
+    def get_image_repository(cls, mission):
+        return "{}/{}".format(cls.DOCKER_REPOSITORY_PREFIX, mission)
 
     def run(self, mission, command, mem_limit=None, cpu_shares=None, volumes=None):
         container = self.create_container(mission, command, mem_limit, cpu_shares, volumes=volumes)
@@ -41,7 +41,7 @@ class DockerClient(object):
     def create_container(self, mission, command, name=None, mem_limit=None, cpu_shares=None,
                          volumes=None, **kwargs):
         logging.debug("Create container: {}, {}, {}".format(command, mem_limit, cpu_shares))
-        image_name = self.get_image_name(mission)
+        image_name = self.get_image_repository(mission)
         if volumes is None:
             volumes_list = []
             host_config = {}
@@ -66,7 +66,7 @@ class DockerClient(object):
         )
         return Container(container=container, connection=self._client)
 
-    def build(self, name_image, path=None, dockerfile_content=None):
+    def build(self, image_tag, path=None, dockerfile_content=None):
         """
         Build new docker image
         :param name_image: name of new docker image
@@ -76,26 +76,18 @@ class DockerClient(object):
         Must be passed one of this args: path or dockerfile_content
         :return: None
         """
-        logging.debug("Build: {}, {}".format(name_image, path))
-
-        def _format_output_line(line):
-            line_str = line.decode('latin-1').strip()
-            data = json.loads(line_str)
-            for key, value in data.items():
-                # TODO: if any error - raise exception
-                if isinstance(value, basestring):
-                    value = value.strip()
-                if not value:
-                    return None
-                return u"{}: {}".format(key, value)
+        logging.debug("Build: {}, {}".format(image_tag, path))
 
         file_obj = None
         if dockerfile_content is not None:
             file_obj = BytesIO(dockerfile_content.encode('utf-8'))
-        for line in self._client.build(path=path, fileobj=file_obj, tag=name_image, nocache=True):
-            line = _format_output_line(line)
-            if line is not None:
-                logging.info(line)
+
+        build = partial(self._client.build, path=path, fileobj=file_obj, tag=image_tag, rm=True,
+                        forcerm=True, pull=True, encoding='utf-8')
+        output = (line for line in build())
+        if output:
+            logging.info(output)
+        return image_tag
 
     def build_mission(self, mission, repository=None, source_path=None, compiled_path=None):
         """
@@ -107,11 +99,11 @@ class DockerClient(object):
         """
         assert repository or source_path
 
-        image_name = self.get_image_name(mission)
+        image_repository = self.get_image_repository(mission)
         with TemporaryDirectory() as temp_path:
             if compiled_path is None:
                 compiled_path = temp_path
 
             mission_source = MissionFilesCompiler(compiled_path)
             mission_source.compile(source_path=source_path, repository=repository)
-            self.build(name_image=image_name, path=mission_source.path_verification)
+            return self.build(image_tag=image_repository, path=mission_source.path_verification)
