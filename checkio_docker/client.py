@@ -1,7 +1,6 @@
-import json
 import logging
 import sys
-
+from functools import partial
 from io import BytesIO
 
 from docker import Client
@@ -33,35 +32,23 @@ class DockerClient(object):
     def get_image_name(self, mission):
         return "{}/{}".format(self.PREFIX_IMAGE, mission)
 
-    def run(self, mission, command, mem_limit=None, cpu_shares=None, volumes=None):
-        container = self.create_container(mission, command, mem_limit, cpu_shares, volumes=volumes)
+    def run(self, mission, command, volumes=None, **kwargs):
+        container = self.create_container(mission, command, volumes=volumes, **kwargs)
         container.start()
         return container
 
-    def create_container(self, mission, command, name=None, mem_limit=None, cpu_shares=None,
-                         volumes=None, **kwargs):
-        logging.debug("Create container: {}, {}, {}".format(command, mem_limit, cpu_shares))
-        image_name = self.get_image_name(mission)
-        if volumes is None:
-            volumes_list = []
-            host_config = {}
-        else:
-            volumes_list = list(volumes.keys())
-            binds = []
-            host_config = {
-                'Binds': binds
-            }
-            for f, t in volumes.items():
-                binds.append('{}:{}:ro'.format(t, f))
+    def create_container(self, mission, command, volumes=None, **kwargs):
+        logging.debug("Create container: {}".format(command))
+
+        if volumes is not None:
+            if 'host_config' not in kwargs:
+                kwargs['host_config'] = {}
+            kwargs['volumes'] = list(volumes.keys())
+            kwargs['host_config']['Binds'] = ['{}:{}:ro'.format(t, f) for f, t in volumes.items()]
 
         container = self._client.create_container(
-            image=image_name,
+            image=self.get_image_name(mission),
             command=command,
-            name=name,
-            mem_limit=mem_limit,
-            cpu_shares=cpu_shares,
-            volumes=volumes_list,
-            host_config=host_config,
             **kwargs
         )
         return Container(container=container, connection=self._client)
@@ -78,24 +65,16 @@ class DockerClient(object):
         """
         logging.debug("Build: {}, {}".format(name_image, path))
 
-        def _format_output_line(line):
-            line_str = line.decode('latin-1').strip()
-            data = json.loads(line_str)
-            for key, value in data.items():
-                # TODO: if any error - raise exception
-                if isinstance(value, basestring):
-                    value = value.strip()
-                if not value:
-                    return None
-                return u"{}: {}".format(key, value)
-
         file_obj = None
         if dockerfile_content is not None:
             file_obj = BytesIO(dockerfile_content.encode('utf-8'))
-        for line in self._client.build(path=path, fileobj=file_obj, tag=name_image, nocache=True):
-            line = _format_output_line(line)
-            if line is not None:
-                logging.info(line)
+
+        build = partial(self._client.build, path=path, fileobj=file_obj, tag=name_image, rm=True,
+                        forcerm=True, pull=True, encoding='utf-8')
+        output = [line for line in build()]
+        if output:
+            logging.info(output)
+        return name_image
 
     def build_mission(self, mission, repository=None, source_path=None, compiled_path=None):
         """

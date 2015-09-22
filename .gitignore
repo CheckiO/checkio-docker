@@ -53,3 +53,5 @@ docs/_build/
 # PyBuilder
 target/
 checkio_console/__pycache__/
+
+.idea/
