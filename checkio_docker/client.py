@@ -3,7 +3,7 @@ import sys
 from functools import partial
 from io import BytesIO
 
-from docker import Client
+from docker import DockerClient as Client
 from docker.utils import kwargs_from_env
 
 from .container import Container
@@ -37,18 +37,11 @@ class DockerClient(object):
         container.start()
         return container
 
-    def create_container(self, mission, command, volumes=None, **kwargs):
+    def create_container(self, mission, command, **kwargs):
         logging.debug("Create container: {}".format(command))
-
-        if volumes is not None:
-            if 'host_config' not in kwargs:
-                kwargs['host_config'] = {}
-            kwargs['volumes'] = list(volumes.keys())
-            kwargs['host_config']['Binds'] = ['{}:{}:ro'.format(t, f) for f, t in volumes.items()]
-
-        container = self._client.create_container(
-            image=self.get_image_name(mission),
-            command=command,
+        
+        container = self._client.containers.create(
+            self.get_image_name(mission), command,
             **kwargs
         )
         return Container(container=container, connection=self._client)
@@ -69,7 +62,7 @@ class DockerClient(object):
         if dockerfile_content is not None:
             file_obj = BytesIO(dockerfile_content.encode('utf-8'))
 
-        build = partial(self._client.build, path=path, fileobj=file_obj, tag=name_image, rm=True,
+        build = partial(self._client.images.build, path=path, fileobj=file_obj, tag=name_image, rm=True,
                         forcerm=True, pull=True, encoding='utf-8')
         output = [line for line in build()]
         if output:

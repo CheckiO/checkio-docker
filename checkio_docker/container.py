@@ -4,13 +4,13 @@ class Container(object):
         self._connection = connection
 
     def start(self):
-        self._connection.start(container=self._container)
+        self._container.start()
 
     def stop(self):
-        self._connection.stop(container=self._container, timeout=2)
+        self._container.stop()
 
     def remove(self):
-        self._connection.remove_container(container=self._container)
+        self._container.remove()
 
     def logs(self, stream=False, logs=False):
-        return self._connection.attach(container=self._container, stream=stream, logs=logs)
+        return self._container.attach(stream=stream, logs=logs)
