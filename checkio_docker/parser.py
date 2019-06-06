@@ -76,6 +76,7 @@ class _MissionFilesCompiler(object):
 
     DOCKER_MAIN_FILENAME = 'Dockertemplate'
     DOCKER_ENV_FILENAME = 'Dockerenv'
+    DOCKER_EXTENSION_FILENAME = 'Dockerextension'
 
     def __init__(self, working_path):
         self.working_path = working_path
@@ -179,6 +180,10 @@ class _MissionFilesCompiler(object):
             docker_env_file = os.path.join(self.path_verification, 'envs', env, self.DOCKER_ENV_FILENAME)
             docker_env_content = self._get_file_content(docker_env_file)
             envs_docker.append(docker_env_content.replace('{{env}}', env))
+
+        docker_extension_file = os.path.join(self.path_verification, self.DOCKER_EXTENSION_FILENAME)
+        docker_env_content = self._get_file_content(docker_extension_file)
+        envs_docker.append(docker_env_content)
 
         docker_main_file = os.path.join(self.path_verification, self.DOCKER_MAIN_FILENAME)
         docker_main = self._get_file_content(docker_main_file)

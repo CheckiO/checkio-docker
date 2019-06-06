@@ -4,6 +4,7 @@ from functools import partial
 from io import BytesIO
 
 from docker import DockerClient as Client
+from docker.errors import ImageNotFound
 from docker.utils import kwargs_from_env
 
 from .container import Container
@@ -56,6 +57,13 @@ class DockerClient(object):
         Must be passed one of this args: path or dockerfile_content
         :return: None
         """
+
+        logging.debug("Remove: {}".format(name_image,))
+        try:
+            self._client.images.remove(image=name_image, force=True)
+        except ImageNotFound:
+            pass
+
         logging.debug("Build: {}, {}".format(name_image, path))
 
         file_obj = None
